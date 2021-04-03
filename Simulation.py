@@ -13,18 +13,19 @@ START_POINT_X = 0
 START_POINT_Y = -100
 
 #time
-SIM_TIME = 17
+SIM_TIME = 30
 TIME_STEP = 0.05
 
 #physics
-MAX_THRUST = 35
+MAX_THRUST = 25
 MIN_THRUST = 0
 THRUST_TIME = 2.5
 CD = 0.5
-DIAMETER = 0.01 #m
-MASS = 1000 #grams
+DIAMETER = 0.02 #m
+MASS = 600 #grams
 INITIAL_A = 0
 INITIAL_V = 0
+INITIAL_H = 0
 
 class Simulation(object):
     def __init__(self):
@@ -73,27 +74,26 @@ class Rocket(object):
         self.ddyArray = list()
         self.dy = INITIAL_V
         self.dyArray = list()
-        self.y = START_POINT_Y
+        self.y = INITIAL_H
         self.yArray = list()
         #status
         self.done = 0
     
     def calculateDynamicPressure(self, velocity):
-        return 0.5 * RHO * abs(velocity/10)**2      #RHO atmosfer modelinden sonra disaridan beslenebilir
+        return 0.5 * RHO * velocity**2      #RHO atmosfer modelinden sonra disaridan beslenebilir
 
     def calculateDrageForce(self, velocity):
         return self.calculateDynamicPressure(velocity) * self.surface_area * self.cd
 
     def setAcceleration(self, thrust):
         """
-        f = m*a -> a_thust = f_thrust / m_total, a_total = a_thrust - a_gravity 
+        f = m*a -> a_thust = f_thrust / m_total, a_total = a_thrust - a_drag - a_gravity 
         """
         if(thrust > 0):
             self.color = 1
         else:
             self.color = 2
-        print(self.calculateDynamicPressure(self.dy))
-        aThrust = (thrust) / (self.mass * GRAM_TO_KG)
+        aThrust = (thrust - self.calculateDrageForce(self.dy)) / (self.mass * GRAM_TO_KG)
         self.ddy = aThrust - GRAVITY
         self.ddyArray.append(self.ddy)
 
@@ -110,13 +110,13 @@ class Rocket(object):
         return self.dy
 
     def setPosition(self):
-        if(self.y >= START_POINT_Y):
+        if(self.y >= INITIAL_H):
             self.y = self.y + (self.getVelocity() * TIME_STEP)
         else:
             self.color = 0
             self.done = 1
         self.yArray.append(self.y)
-        self.Rocket.sety(self.y)
+        self.Rocket.sety(self.y + START_POINT_Y)
     
     def getPosition(self):
         return self.y
