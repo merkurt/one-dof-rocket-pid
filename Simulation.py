@@ -1,4 +1,5 @@
 import turtle
+from PID import *
 from plotter import *
 
 #global params
@@ -17,12 +18,12 @@ SIM_TIME = 30
 TIME_STEP = 0.05
 
 #physics
-MAX_THRUST = 25
+MAX_THRUST = 45
 MIN_THRUST = 0
-THRUST_TIME = 2.5
+THRUST_TIME = 2.5 # -1 for PID
 CD = 0.5
-DIAMETER = 0.025 #m
-MASS = 600 #grams
+DIAMETER = 0.04 #m
+MASS = 1000 #grams
 INITIAL_A = 0
 INITIAL_V = 0
 INITIAL_H = 0
@@ -123,8 +124,8 @@ class Rocket(object):
     def setColor(self):
         self.Rocket.color(self.colorList[self.color])
     
-    def update(self, time):
-        self.setAcceleration(self.motor.thrust(time))
+    def update(self, timeOrTarget):
+        self.setAcceleration(self.motor.thrust(timeOrTarget))
         self.setVelocity()
         self.setPosition()
         self.setColor()
