@@ -21,7 +21,7 @@ MAX_THRUST = 25
 MIN_THRUST = 0
 THRUST_TIME = 2.5
 CD = 0.5
-DIAMETER = 0.02 #m
+DIAMETER = 0.025 #m
 MASS = 600 #grams
 INITIAL_A = 0
 INITIAL_V = 0
@@ -93,8 +93,7 @@ class Rocket(object):
             self.color = 1
         else:
             self.color = 2
-        aThrust = (thrust - self.calculateDrageForce(self.dy)) / (self.mass * GRAM_TO_KG)
-        self.ddy = aThrust - GRAVITY
+        self.ddy = (thrust - self.calculateDrageForce(self.dy)) / (self.mass * GRAM_TO_KG) - GRAVITY
         self.ddyArray.append(self.ddy)
 
     def getAcceleration(self):
