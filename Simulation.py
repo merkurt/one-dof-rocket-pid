@@ -1,5 +1,5 @@
 import turtle
-from PID import *
+from PIDBasedThrust import *
 from plotter import *
 
 #global params
@@ -9,16 +9,27 @@ GRAVITY = 9.80665 # m/s^2
 RHO = 1.225
 
 #simulation
-SETPOINT = 100
+PID_STATUS = 1 # on:1 off:0
+TARGET_POINT = 100
 START_POINT_X = 0
 START_POINT_Y = -100
+SETPOINT = TARGET_POINT - START_POINT_Y
 
 #time
-SIM_TIME = 30
+SIM_TIME = 40
 TIME_STEP = 0.05
 
+#PID
+#https://en.wikipedia.org/wiki/Ziegler–Nichols_method
+ku = 0.5
+tu = 20
+KP = 0.6 * ku
+KI = (1.2 * ku) / tu
+KD = 0.075 * ku * tu
+INTEGRAL_ERROR_MAX = 400
+
 #physics
-MAX_THRUST = 45
+MAX_THRUST = 50
 MIN_THRUST = 0
 THRUST_TIME = 2.5 # -1 for PID
 CD = 0.5
@@ -37,7 +48,7 @@ class Simulation(object):
         self.marker.penup()
         self.marker.speed(10)
         self.marker.left(180)
-        self.marker.goto(15, SETPOINT)
+        self.marker.goto(15, TARGET_POINT)
         self.marker.color("red")
         self.simTimer = 0
         self.simStatus = True
@@ -48,7 +59,10 @@ class Simulation(object):
             self.simTimer += TIME_STEP
             self.timeArray.append(self.simTimer)
             #cycle start
-            self.simStatus = self.rocket.update(self.simTimer)
+            if(PID_STATUS):
+                self.simStatus = self.rocket.updatePIDBased(SETPOINT)
+            else:
+                self.simStatus = self.rocket.updateTimeBased(self.simTimer)
             #cycle end
             if(self.simTimer > SIM_TIME):
                 self.simStatus = False
@@ -66,7 +80,10 @@ class Rocket(object):
         self.colorList = ['black', 'green', 'blue', 'red']
         self.color = 0 # 0:black, 1:green, 2:blue, 3:red
         #motor
-        self.motor = Thrust(MIN_THRUST, MAX_THRUST, THRUST_TIME)
+        if(PID_STATUS):
+            self.motor = PIDBasedThrust(MIN_THRUST, MAX_THRUST, KP, KI, KD, TIME_STEP, INTEGRAL_ERROR_MAX)
+        else:
+            self.motor = Thrust(MIN_THRUST, MAX_THRUST, THRUST_TIME)
         #physics
         self.cd = cd
         self.surface_area = PI * dia * dia
@@ -116,6 +133,7 @@ class Rocket(object):
             self.color = 0
             self.done = 1
         self.yArray.append(self.y)
+        print("altitude:", self.y)
         self.Rocket.sety(self.y + START_POINT_Y)
     
     def getPosition(self):
@@ -124,10 +142,20 @@ class Rocket(object):
     def setColor(self):
         self.Rocket.color(self.colorList[self.color])
     
-    def update(self, timeOrTarget):
-        self.setAcceleration(self.motor.thrust(timeOrTarget))
+    def updateTimeBased(self, time):
+        self.setAcceleration(self.motor.thrust(time))
         self.setVelocity()
         self.setPosition()
+        self.setColor()
+        return not self.done
+    
+    def updatePIDBased(self, target):
+        thrust = self.motor.thrust(self.getPosition(), target)
+        self.setAcceleration(thrust)
+        self.setVelocity()
+        self.setPosition()
+        if(thrust > 0):
+            self.color = 1
         self.setColor()
         return not self.done
 
